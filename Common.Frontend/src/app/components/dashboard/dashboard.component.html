@@ -1,0 +1,118 @@
+<div class="dashboard-body">
+    <nav class="glass-nav">
+        <div class="logo">CommonHub <span class="badge">{{ role }}</span></div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span style="color: white; font-weight: 600;">Welcome, {{ username }}</span>
+            <button (click)="logout()" class="btn-secondary">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Tab Bar (Admin only toggle) -->
+    <div *ngIf="isAdmin" class="container" style="margin-top: 1.5rem; margin-bottom: 0.5rem; display: flex; gap: 10px;">
+        <button (click)="setTab('items')" [class.btn-primary]="activeTab === 'items'" [class.btn-secondary]="activeTab !== 'items'">Items Inventory</button>
+        <button (click)="setTab('users')" [class.btn-primary]="activeTab === 'users'" [class.btn-secondary]="activeTab !== 'users'">MongoDB User Management</button>
+    </div>
+
+    <!-- ITEMS INVENTORY TAB -->
+    <main *ngIf="activeTab === 'items'" class="container">
+        <div class="header-action">
+            <h2>Item Inventory (Live 1-to-3 Sync)</h2>
+            <button *ngIf="isAdmin" (click)="openModal()" class="btn-primary">Add New Item</button>
+        </div>
+
+        <!-- Add Item Form Modal -->
+        <div *ngIf="showModal" class="glass-container" style="margin-bottom: 2rem;">
+            <h3>Add Item</h3>
+            <div class="form-group">
+                <input type="text" [(ngModel)]="newItem.name" placeholder="Name">
+                <input type="text" [(ngModel)]="newItem.category" placeholder="Category">
+                <input type="number" [(ngModel)]="newItem.price" placeholder="Price ($)">
+                <input type="number" [(ngModel)]="newItem.stockQuantity" placeholder="Stock Quantity">
+                <button (click)="saveItem()" class="btn-primary">Save</button>
+                <button (click)="closeModal()" class="btn-secondary">Cancel</button>
+            </div>
+        </div>
+
+        <div class="table-container glass-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item Name</th>
+                        <th>Category</th>
+                        <th>Source Service</th>
+                        <th>Price ($)</th>
+                        <th *ngIf="isAdmin">Stock</th>
+                        <th *ngIf="isAdmin">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of items">
+                        <td><strong>{{ item.name }}</strong></td>
+                        <td>{{ item.category }}</td>
+                        <td>
+                            <span class="badge" [style.background]="item.sourceService === 'Dairy' ? '#3b82f6' : (item.sourceService === 'Grocery' ? '#10b981' : (item.sourceService === 'Stationary' ? '#f59e0b' : 'var(--gradient-btn)'))">
+                                {{ item.sourceService || 'Common' }}
+                            </span>
+                        </td>
+                        <td>${{ item.price }}</td>
+                        <td *ngIf="isAdmin">{{ item.stockQuantity }}</td>
+                        <td *ngIf="isAdmin">
+                            <button class="btn-secondary btn-sm" (click)="deleteItem(item.itemId)">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- MONGODB USER MANAGEMENT TAB (ADMIN ONLY) -->
+    <main *ngIf="activeTab === 'users' && isAdmin" class="container">
+        <div class="header-action">
+            <h2>MongoDB Users</h2>
+            <button (click)="openUserModal()" class="btn-primary">Add New User</button>
+        </div>
+
+        <!-- Add User Form Modal -->
+        <div *ngIf="showUserModal" class="glass-container" style="margin-bottom: 2rem;">
+            <h3>Add New MongoDB User</h3>
+            <div class="form-group" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                <input type="text" [(ngModel)]="newUser.username" placeholder="Username" style="flex: 1; min-width: 150px;">
+                <input type="password" [(ngModel)]="newUser.password" placeholder="Password" style="flex: 1; min-width: 150px;">
+                <input type="email" [(ngModel)]="newUser.email" placeholder="Email" style="flex: 1; min-width: 150px;">
+                <select [(ngModel)]="newUser.role" style="padding: 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); color: white;">
+                    <option value="User">User</option>
+                    <option value="Admin">Admin</option>
+                </select>
+                <button (click)="saveUser()" class="btn-primary">Create User</button>
+                <button (click)="closeUserModal()" class="btn-secondary">Cancel</button>
+            </div>
+        </div>
+
+        <div class="table-container glass-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Created At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let user of users">
+                        <td style="font-family: monospace; font-size: 0.85rem;">{{ user.id }}</td>
+                        <td><strong>{{ user.username }}</strong></td>
+                        <td>{{ user.email || 'N/A' }}</td>
+                        <td><span class="badge">{{ user.role }}</span></td>
+                        <td>{{ user.createdAt | date:'mediumDate' }}</td>
+                        <td>
+                            <button class="btn-secondary btn-sm" (click)="deleteUser(user.id)">Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>

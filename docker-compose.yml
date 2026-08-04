@@ -1,0 +1,25 @@
+services:
+  common-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8091:8080"
+    environment:
+      - MongoDb__DatabaseName=CommonDB
+      - MongoDb__ConnectionString=mongodb+srv://naikamit6773_db_user:7N4cdTzMnEM0Wx50@cluster0.xacwfmi.mongodb.net/?appName=Cluster0
+      - ServiceUrls__DairyService=http://host.docker.internal:8088
+      - ServiceUrls__GroceryService=http://host.docker.internal:8089
+      - ServiceUrls__StationaryService=http://host.docker.internal:8090
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  common-frontend:
+    build:
+      context: ./Common.Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "4203:80"
+    depends_on:
+      - common-api
+

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.1" />
+    <PackageReference Include="MongoDB.Bson" Version="3.10.0" />
+    <PackageReference Include="Dairypro.Common.Library" Version="1.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common.Context\Common.Context.csproj" />
+    <ProjectReference Include="..\Common.DMO\Common.DMO.csproj" />
+    <ProjectReference Include="..\Common.DTO\Common.DTO.csproj" />
+  </ItemGroup>
+</Project>
