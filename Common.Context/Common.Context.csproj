@@ -7,7 +7,7 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Dairypro.Common.Library" Version="1.0.0" />
+    <PackageReference Include="Dairypro.Common.Library" Version="1.0.*" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common.DMO\Common.DMO.csproj" />

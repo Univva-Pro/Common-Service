@@ -53,15 +53,18 @@ namespace Common.Context
             var stationaryUrl = configuration?["ServiceUrls:StationaryService"];
             _stationaryBaseUrl = !string.IsNullOrWhiteSpace(stationaryUrl) ? stationaryUrl : "http://localhost:8090";
 
-            try
+            if (!string.IsNullOrWhiteSpace(connectionString))
             {
-                var client = CreateClient(connectionString);
-                var database = client.GetDatabase(databaseName);
-                _commonItems = database.GetCollection<CommonItem>("commonItems");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[COMMON REPO INIT WARNING] {ex.Message}");
+                try
+                {
+                    var client = CreateClient(connectionString);
+                    var database = client.GetDatabase(databaseName);
+                    _commonItems = database.GetCollection<CommonItem>("commonItems");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[COMMON REPO INIT WARNING] {ex.Message}");
+                }
             }
         }
 
@@ -145,7 +148,28 @@ namespace Common.Context
             // 2. Fetch live products from sub-services via REST HTTP APIs
             await FetchSubServiceProductsOverHttpAsync(result);
 
-            return result;
+            // 3. Deduplicate final result list by SourceService + Name (and OriginalId)
+            var deduplicated = new List<CommonItem>();
+            var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var item in result)
+            {
+                string cleanName = item.Name?.Trim() ?? "";
+                if (string.IsNullOrEmpty(cleanName)) continue;
+
+                string serviceKey = string.IsNullOrEmpty(item.SourceService) ? "Common" : item.SourceService.Trim();
+                string nameKey = $"{serviceKey}:{cleanName}";
+                string idKey = !string.IsNullOrEmpty(item.OriginalId) ? $"{serviceKey}:ID:{item.OriginalId}" : nameKey;
+
+                if (!seenKeys.Contains(nameKey) && !seenKeys.Contains(idKey))
+                {
+                    seenKeys.Add(nameKey);
+                    seenKeys.Add(idKey);
+                    deduplicated.Add(item);
+                }
+            }
+
+            return deduplicated;
         }
 
         private async Task FetchSubServiceProductsOverHttpAsync(List<CommonItem> result)
@@ -165,8 +189,20 @@ namespace Common.Context
                         {
                             string name = GetString(elem, "name");
                             if (string.IsNullOrEmpty(name)) name = GetString(elem, "productName");
+                            name = name.Trim();
                             if (string.IsNullOrEmpty(name)) continue;
-                            if (!result.Exists(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+
+                            string origId = GetString(elem, "productId");
+                            if (string.IsNullOrEmpty(origId)) origId = GetString(elem, "id");
+                            if (string.IsNullOrEmpty(origId)) origId = GetString(elem, "originalId");
+
+                            bool exists = result.Exists(x =>
+                                (!string.IsNullOrEmpty(origId) && x.OriginalId == origId) ||
+                                (!string.IsNullOrEmpty(x.Name) && x.Name.Trim().Equals(name, StringComparison.OrdinalIgnoreCase) &&
+                                 (string.IsNullOrEmpty(x.SourceService) || x.SourceService.Equals("Dairy", StringComparison.OrdinalIgnoreCase)))
+                            );
+
+                            if (!exists)
                             {
                                 double fat = GetDouble(elem, "fatContent", 3.5);
                                 if (fat == 0.0) fat = GetDouble(elem, "fatContentPercentage", 3.5);
@@ -178,6 +214,7 @@ namespace Common.Context
                                 result.Add(new CommonItem
                                 {
                                     Id = ObjectId.GenerateNewId(),
+                                    OriginalId = origId,
                                     Name = name,
                                     Category = "Dairy",
                                     Price = price,
@@ -209,8 +246,20 @@ namespace Common.Context
                         {
                             string name = GetString(elem, "name");
                             if (string.IsNullOrEmpty(name)) name = GetString(elem, "productName");
+                            name = name.Trim();
                             if (string.IsNullOrEmpty(name)) continue;
-                            if (!result.Exists(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+
+                            string origId = GetString(elem, "productId");
+                            if (string.IsNullOrEmpty(origId)) origId = GetString(elem, "id");
+                            if (string.IsNullOrEmpty(origId)) origId = GetString(elem, "originalId");
+
+                            bool exists = result.Exists(x =>
+                                (!string.IsNullOrEmpty(origId) && x.OriginalId == origId) ||
+                                (!string.IsNullOrEmpty(x.Name) && x.Name.Trim().Equals(name, StringComparison.OrdinalIgnoreCase) &&
+                                 (string.IsNullOrEmpty(x.SourceService) || x.SourceService.Equals("Grocery", StringComparison.OrdinalIgnoreCase)))
+                            );
+
+                            if (!exists)
                             {
                                 double price = GetDouble(elem, "price", 4.99);
                                 int stock = GetInt(elem, "stockQuantity", 50);
@@ -219,6 +268,7 @@ namespace Common.Context
                                 result.Add(new CommonItem
                                 {
                                     Id = ObjectId.GenerateNewId(),
+                                    OriginalId = origId,
                                     Name = name,
                                     Category = "Grocery",
                                     Price = price,
@@ -250,8 +300,20 @@ namespace Common.Context
                         {
                             string name = GetString(elem, "name");
                             if (string.IsNullOrEmpty(name)) name = GetString(elem, "productName");
+                            name = name.Trim();
                             if (string.IsNullOrEmpty(name)) continue;
-                            if (!result.Exists(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+
+                            string origId = GetString(elem, "productId");
+                            if (string.IsNullOrEmpty(origId)) origId = GetString(elem, "id");
+                            if (string.IsNullOrEmpty(origId)) origId = GetString(elem, "originalId");
+
+                            bool exists = result.Exists(x =>
+                                (!string.IsNullOrEmpty(origId) && x.OriginalId == origId) ||
+                                (!string.IsNullOrEmpty(x.Name) && x.Name.Trim().Equals(name, StringComparison.OrdinalIgnoreCase) &&
+                                 (string.IsNullOrEmpty(x.SourceService) || x.SourceService.Equals("Stationary", StringComparison.OrdinalIgnoreCase)))
+                            );
+
+                            if (!exists)
                             {
                                 string cat = GetString(elem, "category", "Stationary");
                                 if (string.IsNullOrEmpty(cat)) cat = "Stationary";
@@ -262,6 +324,7 @@ namespace Common.Context
                                 result.Add(new CommonItem
                                 {
                                     Id = ObjectId.GenerateNewId(),
+                                    OriginalId = origId,
                                     Name = name,
                                     Category = cat,
                                     Price = price,
@@ -303,16 +366,27 @@ namespace Common.Context
 
         public async Task SyncProductAsync(ProductSyncPayload payload)
         {
+            if (_commonItems == null || payload == null) return;
+
+            string cleanName = payload.Name?.Trim() ?? "";
+            string cleanOriginalId = payload.OriginalId?.Trim() ?? "";
+            string cleanSource = payload.SourceService?.Trim() ?? "";
+
             if (payload.ActionType == "Add")
             {
-                var existing = await _commonItems.Find(x => (x.OriginalId == payload.OriginalId || x.Name.ToLower() == payload.Name.ToLower()) && x.SourceService == payload.SourceService).FirstOrDefaultAsync();
+                var existing = await _commonItems.Find(x => 
+                    ((!string.IsNullOrEmpty(cleanOriginalId) && x.OriginalId == cleanOriginalId) || 
+                     (!string.IsNullOrEmpty(cleanName) && x.Name.ToLower() == cleanName.ToLower())) && 
+                    x.SourceService == cleanSource
+                ).FirstOrDefaultAsync();
+
                 if (existing == null)
                 {
                     var item = new CommonItem
                     {
-                        OriginalId = payload.OriginalId,
-                        SourceService = payload.SourceService,
-                        Name = payload.Name,
+                        OriginalId = cleanOriginalId,
+                        SourceService = cleanSource,
+                        Name = cleanName,
                         Category = payload.Category,
                         Price = (double)payload.Price,
                         StockQuantity = payload.StockQuantity
@@ -322,10 +396,15 @@ namespace Common.Context
             }
             else if (payload.ActionType == "Update")
             {
-                var existing = await _commonItems.Find(x => (x.OriginalId == payload.OriginalId || x.Name.ToLower() == payload.Name.ToLower()) && x.SourceService == payload.SourceService).FirstOrDefaultAsync();
+                var existing = await _commonItems.Find(x => 
+                    ((!string.IsNullOrEmpty(cleanOriginalId) && x.OriginalId == cleanOriginalId) || 
+                     (!string.IsNullOrEmpty(cleanName) && x.Name.ToLower() == cleanName.ToLower())) && 
+                    x.SourceService == cleanSource
+                ).FirstOrDefaultAsync();
+
                 if (existing != null)
                 {
-                    existing.Name = payload.Name;
+                    existing.Name = cleanName;
                     existing.Category = payload.Category;
                     existing.Price = (double)payload.Price;
                     existing.StockQuantity = payload.StockQuantity;
@@ -335,9 +414,9 @@ namespace Common.Context
                 {
                     var item = new CommonItem
                     {
-                        OriginalId = payload.OriginalId,
-                        SourceService = payload.SourceService,
-                        Name = payload.Name,
+                        OriginalId = cleanOriginalId,
+                        SourceService = cleanSource,
+                        Name = cleanName,
                         Category = payload.Category,
                         Price = (double)payload.Price,
                         StockQuantity = payload.StockQuantity
@@ -347,7 +426,11 @@ namespace Common.Context
             }
             else if (payload.ActionType == "Delete")
             {
-                await _commonItems.DeleteManyAsync(x => (x.OriginalId == payload.OriginalId || x.Name.ToLower() == payload.Name.ToLower()) && x.SourceService == payload.SourceService);
+                await _commonItems.DeleteManyAsync(x => 
+                    ((!string.IsNullOrEmpty(cleanOriginalId) && x.OriginalId == cleanOriginalId) || 
+                     (!string.IsNullOrEmpty(cleanName) && x.Name.ToLower() == cleanName.ToLower())) && 
+                    x.SourceService == cleanSource
+                );
             }
         }
     }

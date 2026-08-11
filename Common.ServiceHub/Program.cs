@@ -20,16 +20,16 @@ using System.IdentityModel.Tokens.Jwt;
 var builder = WebApplication.CreateBuilder(args);
 
 // DB Config
-var connectionString = builder.Configuration["MongoDb:ConnectionString"] ?? "mongodb://localhost:27018";
+var connectionString = builder.Configuration["MongoDb:ConnectionString"];
 var databaseName = builder.Configuration["MongoDb:DatabaseName"] ?? "CommonDB";
 
 Console.WriteLine("====================================================");
-Console.WriteLine($"[STARTUP] Using MongoDB Connection: {connectionString}");
+Console.WriteLine($"[STARTUP] Using MongoDB Connection: {(string.IsNullOrEmpty(connectionString) ? "None (Disabled)" : connectionString)}");
 Console.WriteLine($"[STARTUP] Using Database Name: {databaseName}");
 Console.WriteLine("====================================================");
 
-builder.Services.AddSingleton<CommonRepository>(sp => new CommonRepository(connectionString, databaseName, builder.Configuration));
-builder.Services.AddSingleton<UserRepository>(sp => new UserRepository(connectionString, databaseName));
+builder.Services.AddSingleton<CommonRepository>(sp => new CommonRepository(connectionString ?? "", databaseName, builder.Configuration));
+builder.Services.AddSingleton<UserRepository>(sp => new UserRepository(connectionString ?? "", databaseName));
 
 // JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "ThisIsAVerySecretKeyForJwtAuthenticationWhichNeedsToBeLongEnough";

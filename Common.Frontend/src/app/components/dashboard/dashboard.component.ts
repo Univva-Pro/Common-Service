@@ -116,13 +116,21 @@ export class DashboardComponent implements OnInit {
     };
   }
 
+  isSubmitting = false;
+
   saveItem(): void {
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
     this.itemService.addItem(this.newItem).subscribe({
       next: () => {
+        this.isSubmitting = false;
         this.closeModal();
         this.loadItems();
       },
-      error: (err) => console.error(err)
+      error: (err) => {
+        this.isSubmitting = false;
+        console.error(err);
+      }
     });
   }
 
