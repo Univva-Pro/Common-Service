@@ -1,3 +1,12 @@
+# Stage 1: Build Angular Frontend
+FROM node:20 AS frontend-build
+WORKDIR /app/frontend
+COPY Common.Frontend/package*.json ./
+RUN npm install
+COPY Common.Frontend/ ./
+RUN npm run build -- --configuration production
+
+# Stage 2: Build .NET API Hub
 FROM mcr.microsoft.com/dotnet/sdk:10.0-preview AS build
 WORKDIR /src
 COPY ["nuget.config", "./"]
@@ -8,14 +17,16 @@ COPY ["Common.DMO/Common.DMO.csproj", "Common.DMO/"]
 COPY ["Common.DTO/Common.DTO.csproj", "Common.DTO/"]
 RUN dotnet restore "Common.ServiceHub/Common.ServiceHub.csproj"
 
-# Copy source code
 COPY . .
 
+# Copy compiled Angular app into wwwroot of Common.ServiceHub
+COPY --from=frontend-build /app/frontend/dist/CommonFrontend/browser ./Common.ServiceHub/wwwroot
+
 WORKDIR "/src/Common.ServiceHub"
-RUN dotnet build "Common.ServiceHub.csproj" -c Debug -o /app/build
+RUN dotnet build "Common.ServiceHub.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "Common.ServiceHub.csproj" -c Debug -o /app/publish
+RUN dotnet publish "Common.ServiceHub.csproj" -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-preview AS final
 WORKDIR /app

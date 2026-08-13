@@ -1,0 +1,43 @@
+name: Common-Service Standalone CI/CD
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    name: Build & Test Common-Service
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore Common.ServiceHub/Common.ServiceHub.csproj
+
+      - name: Build Web API
+        run: dotnet build Common.ServiceHub/Common.ServiceHub.csproj -c Release
+
+      - name: Setup Node.js for Frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build Angular Frontend
+        working-directory: ./Common.Frontend
+        run: |
+          npm install
+          npm run build -- --configuration production
+
+      - name: Build Docker Container Images
+        run: |
+          docker build -t common-api:latest .
+          docker build -t common-frontend:latest ./Common.Frontend
