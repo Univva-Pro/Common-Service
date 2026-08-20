@@ -44,14 +44,9 @@ namespace Common.Context
         
         public CommonRepository(string connectionString, string databaseName, Microsoft.Extensions.Configuration.IConfiguration? configuration = null)
         {
-            var dairyUrl = configuration?["ServiceUrls:DairyService"];
-            _dairyBaseUrl = !string.IsNullOrWhiteSpace(dairyUrl) ? dairyUrl : "http://localhost:8088";
-
-            var groceryUrl = configuration?["ServiceUrls:GroceryService"];
-            _groceryBaseUrl = !string.IsNullOrWhiteSpace(groceryUrl) ? groceryUrl : "http://localhost:8089";
-
-            var stationaryUrl = configuration?["ServiceUrls:StationaryService"];
-            _stationaryBaseUrl = !string.IsNullOrWhiteSpace(stationaryUrl) ? stationaryUrl : "http://localhost:8090";
+            _dairyBaseUrl = configuration?["ServiceUrls:DairyService"]?.Trim();
+            _groceryBaseUrl = configuration?["ServiceUrls:GroceryService"]?.Trim();
+            _stationaryBaseUrl = configuration?["ServiceUrls:StationaryService"]?.Trim();
 
             if (!string.IsNullOrWhiteSpace(connectionString))
             {
@@ -342,26 +337,30 @@ namespace Common.Context
             }
         }
 
-        public async Task<CommonItem> GetItemAsync(string id)
+        public async Task<CommonItem?> GetItemAsync(string id)
         {
-            return await _commonItems.Find(p => p.Id == ObjectId.Parse(id)).FirstOrDefaultAsync();
+            if (_commonItems == null || !ObjectId.TryParse(id, out var objId)) return null;
+            return await _commonItems.Find(p => p.Id == objId).FirstOrDefaultAsync();
         }
 
         public async Task AddItemAsync(CommonItem item)
         {
+            if (_commonItems == null) return;
             if (string.IsNullOrEmpty(item.SourceService)) item.SourceService = "Common";
             await _commonItems.InsertOneAsync(item);
         }
 
         public async Task UpdateItemAsync(string id, CommonItem item)
         {
-            item.Id = ObjectId.Parse(id);
-            await _commonItems.ReplaceOneAsync(p => p.Id == item.Id, item);
+            if (_commonItems == null || !ObjectId.TryParse(id, out var objId)) return;
+            item.Id = objId;
+            await _commonItems.ReplaceOneAsync(p => p.Id == objId, item);
         }
 
         public async Task DeleteItemAsync(string id)
         {
-            await _commonItems.DeleteOneAsync(p => p.Id == ObjectId.Parse(id));
+            if (_commonItems == null || !ObjectId.TryParse(id, out var objId)) return;
+            await _commonItems.DeleteOneAsync(p => p.Id == objId);
         }
 
         public async Task SyncProductAsync(ProductSyncPayload payload)
