@@ -8,7 +8,7 @@ import { CommonItemResponse, CommonItemRequest } from '../models/item.model';
   providedIn: 'root'
 })
 export class ItemService {
-  private apiUrl = 'http://localhost:8091/api/common/items';
+  private apiUrl = '/api/common/items';
 
   constructor(private http: HttpClient, private authService: AuthService) { }
 
