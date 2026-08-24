@@ -88,12 +88,32 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
+  isEditingItem = false;
+  editingItemId: string | null = null;
+
   openModal(): void {
+    this.isEditingItem = false;
+    this.editingItemId = null;
+    this.showModal = true;
+  }
+
+  openEditModal(item: any): void {
+    this.isEditingItem = true;
+    this.editingItemId = item.itemId || item.id || item.ItemId;
+    this.newItem = {
+      name: item.name || '',
+      category: item.category || '',
+      price: item.price ?? 0,
+      stockQuantity: item.stockQuantity ?? 0
+    };
     this.showModal = true;
   }
 
   closeModal(): void {
     this.showModal = false;
+    this.isSubmitting = false;
+    this.isEditingItem = false;
+    this.editingItemId = null;
     this.newItem = {
       name: '',
       category: '',
@@ -121,17 +141,32 @@ export class DashboardComponent implements OnInit {
   saveItem(): void {
     if (this.isSubmitting) return;
     this.isSubmitting = true;
-    this.itemService.addItem(this.newItem).subscribe({
-      next: () => {
-        this.isSubmitting = false;
-        this.closeModal();
-        this.loadItems();
-      },
-      error: (err) => {
-        this.isSubmitting = false;
-        console.error(err);
-      }
-    });
+
+    if (this.isEditingItem && this.editingItemId) {
+      this.itemService.updateItem(this.editingItemId, this.newItem).subscribe({
+        next: () => {
+          this.isSubmitting = false;
+          this.closeModal();
+          this.loadItems();
+        },
+        error: (err) => {
+          this.isSubmitting = false;
+          console.error(err);
+        }
+      });
+    } else {
+      this.itemService.addItem(this.newItem).subscribe({
+        next: () => {
+          this.isSubmitting = false;
+          this.closeModal();
+          this.loadItems();
+        },
+        error: (err) => {
+          this.isSubmitting = false;
+          console.error(err);
+        }
+      });
+    }
   }
 
   deleteItem(id: string): void {

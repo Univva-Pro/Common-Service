@@ -29,4 +29,8 @@ export class ItemService {
   deleteItem(id: string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`, { headers: this.getHeaders() });
   }
+
+  updateItem(id: string, item: CommonItemRequest): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}`, item, { headers: this.getHeaders() });
+  }
 }
