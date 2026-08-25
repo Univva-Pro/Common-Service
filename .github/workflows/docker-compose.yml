@@ -1,22 +1,18 @@
-services:
-  common-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8091:8080"
-    environment:
-      - ServiceUrls__DairyService=http://host.docker.internal:8088
-      - ServiceUrls__GroceryService=http://host.docker.internal:8089
-      - ServiceUrls__StationaryService=http://host.docker.internal:8090
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+name: Docker Compose CI
 
-  common-frontend:
-    build:
-      context: ./Common.Frontend
-      dockerfile: Dockerfile
-    ports:
-      - "4203:80"
-    depends_on:
-      - common-api
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  validate-docker-compose:
+    name: Validate Docker Compose Config
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Compose Config
+        run: docker compose config
